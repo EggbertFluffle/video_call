@@ -1,5 +1,7 @@
+#define _SERVER
+
 #include <stdio.h>
 
-int main(int argc, char** argv) {
+int main(void) {
 	printf("[SERVER] Hello, world\n");
 }
