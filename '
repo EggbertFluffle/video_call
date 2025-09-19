@@ -1,0 +1,73 @@
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/fcntl.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
+#include <poll.h>
+#include <memory.h>
+#include <unistd.h>
+#include <errno.h>
+
+#include "network.h"
+
+int initialize_network_context(network_context* nctx, char* server_ipv4, char* server_port) {
+	nctx->pollfds[0].fd = 0; // Add stdin to the poll list
+	nctx->pollfds[0].events = POLLIN;
+	int opts = fcntl(nctx->pollfds[0].fd, F_GETFL, 0); // Get the current socket options
+	fcntl(nctx->pollfds[0].fd, F_SETFL, opts | O_NONBLOCK); // Stdin should be non-blocking
+
+
+	// Get address info for server domain/ip and port
+	int status = 0;
+	struct addrinfo sock_stream_hints, *sock_stream_info;
+
+	memset(&sock_stream_hints, 0, sizeof(sock_stream_hints));
+	sock_stream_hints.ai_family = AF_INET;
+	sock_stream_hints.ai_socktype = SOCK_STREAM;
+	if((status = getaddrinfo(server_ipv4, server_port, &sock_stream_hints, &sock_stream_info)) != 0) {
+		print_log("Get address info error: %s\n", gai_strerror(status));
+		return -1;
+	}
+
+	nctx->server_sock_stream = socket(sock_stream_info->ai_family, sock_stream_info->ai_socktype, sock_stream_info->ai_protocol); // Create server socket stream
+	if(nctx->server_sock_stream == -1) {
+		print_log("Unable to create socket stream for server! Errno: %d", errno);
+		return -1;
+	}
+	nctx->pollfds[1].fd = nctx->server_sock_stream;
+	nctx->pollfds[1].events = POLLIN;
+	opts = fcntl(nctx->pollfds[1].fd, F_GETFL, 0);
+	fcntl(nctx->server_sock_stream, F_SETFL, opts | O_NONBLOCK);
+
+	struct addrinfo sock_dgram_hints, *sock_dgram_info;
+	memset(&sock_dgram_hints, 0, sizeof(sock_dgram_hints));
+	sock_dgram_hints.ai_family = AF_INET;
+	sock_dgram_hints.ai_socktype = SOCK_DGRAM;
+	if((status = getaddrinfo(server_ipv4, server_port, &sock_dgram_hints, &sock_dgram_info)) != 0) {
+		print_log("Get address info error: %s\n", gai_strerror(status));
+		return -1;
+	}
+
+	nctx->server_sock_dgram = socket(AF_INET, SOCK_DGRAM, 0); // Create server socket datagram
+	if(nctx->server_sock_dgram == -1) {
+		print_log("Unable to create socket datagram for server! Errno: %d", errno);
+		return -1;
+	}
+	nctx->pollfds[2].fd = nctx->server_sock_dgram;
+	nctx->pollfds[2].events = POLLIN;
+	opts = fcntl(nctx->pollfds[2].fd, F_GETFL, 0);
+	fcntl(nctx->server_sock_dgram, F_SETFL, opts | O_NONBLOCK);
+
+	freeaddrinfo(sock_stream_info);
+	freeaddrinfo(sock_dgram_info);
+}
+
+void close_network_context(network_context* nctx) {
+	close(nctx->pollfds[0].fd); // IDK if we actually have to close stdin
+	if(nctx->server_sock_stream != -1) close(nctx->server_sock_stream);
+	if(nctx->server_sock_dgram != -1) close(nctx->server_sock_dgram);
+}

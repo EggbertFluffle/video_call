@@ -9,7 +9,7 @@ main: $(SERVER_BINARY) $(CLIENT_BINARY)
 $(SERVER_BINARY): ./src/server/server.c
 	$(CC) $(CFLAGS) -o $@ $^
 
-$(CLIENT_BINARY): ./src/client/client.c
+$(CLIENT_BINARY): ./src/client/client.c ./src/client/network.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
