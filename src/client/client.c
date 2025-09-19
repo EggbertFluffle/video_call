@@ -14,17 +14,11 @@
 
 #include "network.h"
 #include "camera.h"
+#include "../common/utils.h"
 
-network_context nctx;
+client_network_context ctx;
 
 int main(void) {
-
-    execute();
-
-	return 0;
-}
-
-int connect_init() {
 	char *server_ipv4 = (char *)calloc(64, sizeof(char));
 	char *server_port = (char *)calloc(16, sizeof(char));
 
@@ -34,10 +28,12 @@ int connect_init() {
 	printf("What port would you like to connect through?: ");
 	scanf(" %s", server_port);
 
-	if(initialize_network_context(&nctx, server_ipv4, server_port) == -1) {
-		exit(-1);
+	if(initialize_client_network_context(&ctx, server_ipv4, server_port) == FAIL) {
+		exit(FAIL);
 	}
 
-    return 0;
+    execute();
+
+	return 0;
 }
 

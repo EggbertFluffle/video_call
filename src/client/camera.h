@@ -1,4 +1,3 @@
-#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +8,8 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <linux/videodev2.h>
+
+#include "../common/utils.h"
 
 typedef struct buffer Buffer;
 
