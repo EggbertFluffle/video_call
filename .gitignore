@@ -1,2 +1,2 @@
-src/client/frame.raw
-src/client/client
+bin/
+frame.raw
