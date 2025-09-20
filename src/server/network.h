@@ -22,18 +22,20 @@
 #define MAX_POLLFDS (MAX_CLIENTS + 3) // stdin, listen_tcp, udp
 
 typedef struct {
-	int fd;
-	struct addrinfo addrinfo;
-	struct sockaddr_in client_addr;
+	struct pollfd* pollfd;
 
-	int client_id;
+	int id;
 } client_connection;
 
 typedef struct {
+	struct pollfd* stdin_pollfd;
+
 	int tcp_fd;
+	struct pollfd* tcp_pollfd;
 	struct addrinfo* tcp_info;
 
 	int udp_fd;
+	struct pollfd* udp_pollfd;
 	struct addrinfo* udp_info;
 
 	client_connection clients[MAX_CLIENTS];
@@ -60,5 +62,23 @@ int initialize_server_network_context(server_network_context* ctx, char* server_
 *	@param netowkr_context* nctx: Network context to close the sockets for
 */
 void close_server_network_context(server_network_context* ctx);
+
+/*
+ * 	Accept any connections that appear on the server's listening tcp socket.
+ * 	These connections are then added to the context's list of clients and thier 
+ * 	newly opened sockets to the context's pollfds list
+ */
+int accept_client(server_network_context* ctx);
+
+/*
+ *	Removes the client who's client_id matches the given. Additionally closes
+ *	connection and cleans up associated pollfd
+ */
+int remove_client(server_network_context* ctx, int client_id);
+
+/*
+* Poll all pollfds in the context for events before processing
+*/
+int poll_server_events(server_network_context* ctx);
 
 #endif

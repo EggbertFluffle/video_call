@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -31,8 +32,15 @@ int main(void) {
 	if(initialize_client_network_context(&ctx, server_ipv4, server_port) == FAIL) {
 		exit(FAIL);
 	}
+	
+	bool exit = false;
+	while(!exit) {
+		poll_client_events(&ctx);
 
-    execute();
+		event_packet_handler(&ctx);
+	}
+
+    // execute();
 
 	return 0;
 }
