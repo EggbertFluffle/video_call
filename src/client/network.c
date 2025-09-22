@@ -1,12 +1,13 @@
 #include <stdint.h>
-
+#include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/fcntl.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
 #include <poll.h>
 #include <memory.h>
 #include <unistd.h>
@@ -78,6 +79,8 @@ int initialize_client_network_context(client_network_context* ctx, char* server_
 	opts = fcntl(ctx->udp_fd, F_GETFL, 0);
 	fcntl(ctx->udp_fd, F_SETFL, opts | O_NONBLOCK);
 
+	ctx->id = -1; // Should get a welcome packet for client id
+
 	return 0;
 }
 
@@ -91,32 +94,10 @@ void close_client_network_context(client_network_context* ctx) {
 }
 
 int poll_client_events(client_network_context* ctx) {
+	 // Update poll fds to contain events that occured
 	if(poll(ctx->pollfds, 3, -1) == -1) {
 		print_log("Poll failed! Errno: %d", errno);
 		return -1;
 	}
-	return 0;
-}
-
-
-int event_packet_handler(client_network_context* ctx) {
-	client_packet packet;
-	memset((void*) &packet, 0, sizeof(client_packet));
-
-	if(ctx->tcp_pollfd->revents | POLLIN) {
-		recv(ctx->tcp_fd, (void*) &packet, sizeof(client_packet), 0);
-	}
-
-	switch(packet.type) {
-		case CLIENT_CHAT_PAYLOAD:
-			printf("%d: %s\n", packet.sender_id, packet.payload.chat.message);
-			break;
-		case CLIENT_COMMAND_PAYLOAD:
-			printf("Command from %d: %s\n", packet.sender_id, packet.payload.command.command);
-			break;
-		case CLIENT_DISCONNECT_PAYLOAD:
-			printf("Client %d disconnected\n", packet.sender_id);
-	}
-
 	return 0;
 }

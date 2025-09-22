@@ -1,5 +1,4 @@
-#ifndef _VIDEO_CALL_CLIENT_NETWORK
-#define _VIDEO_CALL_CLIENT_NETWORK
+#pragma once
 
 #include <netdb.h>
 #include <stdio.h>
@@ -18,6 +17,8 @@
 #include <errno.h>
 
 typedef struct {
+	int id;
+
 	struct pollfd* stdin_pollfd;
 
 	int tcp_fd;
@@ -50,15 +51,23 @@ int initialize_client_network_context(client_network_context* ctx, char* server_
 void close_client_network_context(client_network_context* ctx);
 
 /*
- *	Poll each pollable file descriptor for events before checking for events
- *	to handle
- */
+*	Poll each pollable file descriptor for events before checking for events
+*	to handle
+*/
 int poll_client_events(client_network_context* ctx);
 
-/*
-*	Receive tcp packets from server if they are present. Handle each packet
-*	type accordingly.
-*/
-int event_packet_handler(client_network_context* ctx);
 
-#endif
+/*
+*	Read from stdin to get commands and chat messages from the user
+*/
+int text_input_handler(client_network_context* ctx);
+
+/* 
+* 	Handle the execution of a client command
+*/
+int handle_command(client_network_context* ctx, char* input_buffer, ssize_t input_length);
+
+/*
+* 	Send a chat message to the server
+*/
+int handle_chat_send(client_network_context* ctx, char* input_buffer, ssize_t input_length);

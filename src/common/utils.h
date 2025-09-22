@@ -1,5 +1,4 @@
-#ifndef _VIDEO_CALL_UTILS
-#define _VIDEO_CALL_UTILS
+#pragma once
 
 #include <stdio.h>
 
@@ -12,5 +11,3 @@
 #define EMPTY ""
 
 int check_success(int test_case, const char* error_msg);
-
-#endif

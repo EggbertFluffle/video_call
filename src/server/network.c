@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+#include <stdlib.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -7,6 +9,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include <time.h>
 #include <poll.h>
 #include <memory.h>
 #include <unistd.h>
@@ -14,8 +17,11 @@
 
 #include "network.h"
 #include "../common/log.h"
+#include "../common/packets.h"
 
 int initialize_server_network_context(server_network_context* ctx, char* server_ipv4, char* server_port) {
+	srand(time(NULL));
+
 	// Stdin is the first pollable fd
 	ctx->stdin_pollfd = &ctx->pollfds[0];
 	ctx->stdin_pollfd->fd = STDIN_FILENO;
@@ -106,6 +112,14 @@ void close_server_network_context(server_network_context* ctx) {
 	freeaddrinfo(ctx->udp_info);
 }
 
+int poll_server_events(server_network_context* ctx) {
+	if(poll(ctx->pollfds, ctx->pollfd_count, -1) == -1) {
+		print_log("Poll failed! Errno: %d", errno);
+		return -1;
+	}
+	return 0;
+}
+
 int accept_client(server_network_context* ctx) {
 	if(ctx->tcp_pollfd->revents & POLLIN) {
 		int client_fd;
@@ -114,8 +128,9 @@ int accept_client(server_network_context* ctx) {
 			return -1;
 		}
 
-		if(ctx->pollfd_count == MAX_CLIENTS) {
+		if(ctx->client_count == MAX_CLIENTS) {
 			print_log("Max number of clients reached, connection rejected");
+			return -1;
 		}
 
 		struct pollfd* new_pollfd = &ctx->pollfds[ctx->pollfd_count];
@@ -127,7 +142,7 @@ int accept_client(server_network_context* ctx) {
 
 		client_connection* new_client_connection = &ctx->clients[ctx->client_count];
 		new_client_connection->pollfd = new_pollfd;
-		new_client_connection->id = ctx->client_count;
+		new_client_connection->id = rand();
 		ctx->client_count++;
 
 		print_log("New client id %d accepted", new_client_connection->id);
@@ -136,6 +151,7 @@ int accept_client(server_network_context* ctx) {
 	return 0;
 }
 
+// TODO: Compress the list after removal
 int remove_client(server_network_context* ctx, int id) {
 	client_connection* client = NULL;
 
@@ -159,10 +175,36 @@ int remove_client(server_network_context* ctx, int id) {
 	return 0;
 }
 
-int poll_server_events(server_network_context* ctx) {
-	if(poll(ctx->pollfds, ctx->pollfd_count, -1) == -1) {
-		print_log("Poll failed! Errno: %d", errno);
-		return -1;
+client_connection* get_client(server_network_context* ctx, int id) {
+	client_connection* client = NULL;
+	
+	for(int c = 0; c < ctx->client_count; c++) {
+		if(ctx->clients[c].id == id) {
+			client = &ctx->clients[c];
+			return client;
+		}
 	}
+
+	return NULL;
+}
+
+int send_packet(server_network_context* ctx, int client_id, client_packet* packet) {
+	if(client_id > 0) {
+		if(send(get_client(ctx, client_id)->pollfd->fd, (void*) packet, sizeof(client_packet), 0) == -1) {
+			print_log("Unable to send client packet");
+			return -1;
+		}
+	} else {
+		for(int c = 0; c < ctx->client_count; c++) {
+			client_connection* client = &ctx->clients[c];
+			if(client_id < 0 && client->id == -client_id) continue;
+
+			if(send(client->pollfd->fd, (void*) packet, sizeof(client_packet), 0) == -1) {
+				print_log("Unable to send client packet");
+				return -1;
+			}
+		}
+	}
+
 	return 0;
 }

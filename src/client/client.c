@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 #include "network.h"
-#include "camera.h"
+#include "event.h"
 #include "../common/utils.h"
 
 client_network_context ctx;
@@ -32,16 +32,20 @@ int main(void) {
 	if(initialize_client_network_context(&ctx, server_ipv4, server_port) == FAIL) {
 		exit(FAIL);
 	}
+	free(server_ipv4);
+	free(server_port);
 	
 	bool exit = false;
 	while(!exit) {
 		poll_client_events(&ctx);
 
-		event_packet_handler(&ctx);
+		text_input_handler(&ctx);
+
+		handle_packet_receive(&ctx);
 	}
 
     // execute();
 
+	close_client_network_context(&ctx);
 	return 0;
 }
-

@@ -1,5 +1,4 @@
-#ifndef _VIDEO_CALL_LOG
-#define _VIDEO_CALL_LOG
+#pragma once
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -40,5 +39,3 @@ void client_log(const char *format, ...) {
     va_end(args);
     printf("\n");
 }
-
-#endif

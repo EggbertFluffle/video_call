@@ -1,5 +1,4 @@
-#ifndef _VIDEO_CALL_SERVER_NETWORK
-#define _VIDEO_CALL_SERVER_NETWORK
+#pragma once
 
 #include <netdb.h>
 #include <stdio.h>
@@ -16,6 +15,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+
+#include "../common/packets.h"
 
 #define MESSAGE_BUF_LEN 1024
 #define MAX_CLIENTS 32
@@ -77,8 +78,31 @@ int accept_client(server_network_context* ctx);
 int remove_client(server_network_context* ctx, int client_id);
 
 /*
+* 	Get the client_connection of the spesified id from the clients list.
+* 	If the client doesn't exist return NULL, otherwise resturn the client with
+* 	that id
+*
+* 	@param int id: id of the desired client_connection
+* 	@return client_connection: client_connection with the spesified id, or NULL
+* 	if not found.
+*/
+client_connection* get_client(server_network_context* ctx, int id);
+
+/*
 * Poll all pollfds in the context for events before processing
 */
 int poll_server_events(server_network_context* ctx);
 
-#endif
+/*
+* 	Send a client packet out to a single client, eveyone but a client, or all clients
+*
+* 	@param int client_id: Depending on the behaviour of the id given, the packet will be
+* 	sent to different people:
+* 		1. If client_id is a positive, the packet will be sent to ONLY the client with 
+*  		the matching client_id
+* 		2. If client_id is ZERO, the packet will be sent to all clients
+*		3. If client_id is a negative integer, the packet will be sent to every clinet
+*		EXCEPT the to the absolute value of the given client_id
+*	@param client_packet* packet: packet to be sent to the ruled clients above
+*/
+int send_packet(server_network_context* ctx, int client_id, client_packet* packet);
