@@ -1,3 +1,4 @@
+#include <string.h>
 #define _SERVER
 
 #include <sys/socket.h>
@@ -14,17 +15,23 @@
 
 server_network_context ctx;
 
-int main(void) {
-	print_log("Hello, world!");
+int main(int argc, char** argv) {
+	char server_ipv4[64];
+	char server_port[32];
 
-	char *server_ipv4 = (char *)calloc(64, sizeof(char));
-	char *server_port = (char *)calloc(16, sizeof(char));
+	if(argc < 3) {
+		printf("What ip will you connect from?: ");
+		scanf(" %s", server_ipv4);
 
-	printf("What ip will you connect from?: ");
-	scanf(" %s", server_ipv4);
+		printf("What port would you like to connect through?: ");
+		scanf(" %s", server_port);
+	} else {
+		strncpy(server_ipv4, argv[1], sizeof(server_ipv4));
+		strncpy(server_port, argv[2], sizeof(server_port));
+	}
 
-	printf("What port would you like to connect through?: ");
-	scanf(" %s", server_port);
+	printf("%s\n", server_ipv4);
+	printf("%s\n", server_port);
 
 	if(initialize_server_network_context(&ctx, server_ipv4, server_port) == -1) {
 		exit(-1);
