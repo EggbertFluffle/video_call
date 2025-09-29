@@ -7,10 +7,12 @@
 void indent_print_log(int indent, const char *format, ...) {
     va_list args;
 
+	// TODO: Fix preprocessor nonsense to get labels
 	#ifdef _CLIENT
     printf("[CLIENT] ");
 	#endif
 
+	// TODO: Fix preprocessor nonsense to get labels
 	#ifdef _SERVER
     printf("[SERVER] ");
 	#endif
@@ -28,10 +30,12 @@ void print_log(const char *format, ...) {
     va_list args;
     va_start(args, format);
 
+	// TODO: Fix preprocessor nonsense to get labels
 	#ifdef _CLIENT
     printf("[CLIENT] ");
 	#endif
 
+	// TODO: Fix preprocessor nonsense to get labels
 	#ifdef _SERVER
     printf("[SERVER] ");
 	#endif

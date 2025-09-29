@@ -37,7 +37,8 @@ typedef struct {
 
 typedef enum {
 	SERVER_CHAT_PAYLOAD,
-	SERVER_COMMAND_PAYLOAD
+	SERVER_COMMAND_PAYLOAD,
+	SERVER_DISCONNECT_PAYLOAD
 } server_payload_type;
 
 typedef struct {

@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
@@ -18,13 +17,6 @@
 #include "network.h"
 
 int initialize_client_network_context(client_network_context* ctx, char* server_ipv4, char* server_port) {
-	ctx->stdin_pollfd = &ctx->pollfds[0];
-	ctx->stdin_pollfd->fd = STDIN_FILENO; // Add stdin to the poll list
-	ctx->stdin_pollfd->events = POLLIN;
-
-	int opts = fcntl(ctx->stdin_pollfd->fd, F_GETFL, 0); // Get the current socket options
-	fcntl(ctx->stdin_pollfd->fd, F_SETFL, opts | O_NONBLOCK); // Stdin should be non-blocking
-
 	// Get address info for server domain/ip and port
 	int status = 0;
 	struct addrinfo sock_stream_hints;
@@ -35,6 +27,8 @@ int initialize_client_network_context(client_network_context* ctx, char* server_
 	sock_stream_hints.ai_socktype = SOCK_STREAM;
 	if((status = getaddrinfo(server_ipv4, server_port, &sock_stream_hints, &ctx->tcp_info)) != 0) {
 		print_log("Get address info error: %s\n", gai_strerror(status));
+		indent_print_log(1, "server address: '%s' of length %d", server_ipv4, strlen(server_ipv4));
+		indent_print_log(1, "server port: '%s' of length %d", server_port, strlen(server_port));
 		return -1;
 	}
 
@@ -44,7 +38,7 @@ int initialize_client_network_context(client_network_context* ctx, char* server_
 		print_log("Unable to create socket stream for server! Errno: %d", errno);
 		return -1;
 	}
-	ctx->tcp_pollfd = &ctx->pollfds[1];
+	ctx->tcp_pollfd = &ctx->pollfds[0];
 	ctx->tcp_pollfd->fd = ctx->tcp_fd;
 	ctx->tcp_pollfd->events = POLLIN;
 
@@ -54,9 +48,7 @@ int initialize_client_network_context(client_network_context* ctx, char* server_
 		return -1;
 	}
 	print_log("Connection to server established");
-
-	opts = fcntl(ctx->tcp_fd, F_GETFL, 0); // Get current fd options
-	fcntl(ctx->tcp_fd, F_SETFL, opts | O_NONBLOCK); // Set non-blocking option
+	set_nonblocking(ctx->tcp_fd);
 
 	// Repeat the process for the UDP DATAGRAM_SOCKET
 	struct addrinfo sock_dgram_hints;
@@ -73,11 +65,10 @@ int initialize_client_network_context(client_network_context* ctx, char* server_
 		print_log("Unable to create socket datagram for server! Errno: %d", errno);
 		return -1;
 	}
-	ctx->udp_pollfd = &ctx->pollfds[2];
+	ctx->udp_pollfd = &ctx->pollfds[1];
 	ctx->udp_pollfd->fd = ctx->udp_fd;
 	ctx->udp_pollfd->events = POLLIN;
-	opts = fcntl(ctx->udp_fd, F_GETFL, 0);
-	fcntl(ctx->udp_fd, F_SETFL, opts | O_NONBLOCK);
+	set_nonblocking(ctx->udp_fd);
 
 	ctx->id = -1; // Should get a welcome packet for client id
 
@@ -85,7 +76,12 @@ int initialize_client_network_context(client_network_context* ctx, char* server_
 }
 
 void close_client_network_context(client_network_context* ctx) {
-	close(ctx->stdin_pollfd->fd); // IDK if we actually have to close stdin
+	server_packet disconnect_packet;
+	disconnect_packet.type = SERVER_DISCONNECT_PAYLOAD;
+	disconnect_packet.sender_id = ctx->id;
+
+	send_packet(ctx, &disconnect_packet);
+
 	if(ctx->tcp_fd != -1) close(ctx->tcp_fd);
 	if(ctx->udp_fd != -1) close(ctx->udp_fd);
 
@@ -93,11 +89,37 @@ void close_client_network_context(client_network_context* ctx) {
 	freeaddrinfo(ctx->udp_info);
 }
 
-int poll_client_events(client_network_context* ctx) {
+int set_nonblocking(int fd) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1) {
+		return -1;
+	}
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+	return 0;
+}
+
+int poll_events(client_network_context* ctx) {
 	 // Update poll fds to contain events that occured
-	if(poll(ctx->pollfds, 3, -1) == -1) {
+	if(poll(ctx->pollfds, 2, 0) == -1) {
 		print_log("Poll failed! Errno: %d", errno);
 		return -1;
 	}
+	return 0;
+}
+
+int send_packet(client_network_context* ctx, server_packet* packet) {
+	packet->sender_id = ctx->id;
+
+	ssize_t bytes = send(ctx->tcp_fd, (void*) packet, sizeof(server_packet), 0);
+
+	if(bytes < 0) {
+		if((long unsigned int)bytes < sizeof(client_packet)) {
+			print_log("Unable to send entire packet. Sent %d/%d bytes", bytes, sizeof(client_packet));
+			return -1;
+		}
+		print_log("Unable to send client packet");
+		return -1;
+	}
+
 	return 0;
 }

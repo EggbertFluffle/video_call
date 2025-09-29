@@ -19,12 +19,15 @@
 #include "../common/packets.h"
 
 #define MESSAGE_BUF_LEN 1024
+
 #define MAX_CLIENTS 32
-#define MAX_POLLFDS (MAX_CLIENTS + 3) // stdin, listen_tcp, udp
+#define RESERVED_POLLFDS 3
+#define MAX_POLLFDS (MAX_CLIENTS + RESERVED_POLLFDS) // stdin, listen_tcp, udp
+
+# define LISTEN_QUEUE_LENGTH 20
 
 typedef struct {
 	struct pollfd* pollfd;
-
 	int id;
 } client_connection;
 
@@ -43,19 +46,25 @@ typedef struct {
 	int client_count;
 
 	struct pollfd pollfds[MAX_POLLFDS];
-	int pollfd_count;
 } server_network_context;
 
 /*
 *	Initializes a poll file descriptor list for non-blocking interfacing with
 *	stdin, tcp socket and a udp socket
 *
-*	@param netowkr_context* nctx: Network context to put initilization data in
+*	@param netowrk_context* nctx: Network context to put initilization data in
 *	@param char* server_ipv4: ipv4 of the desired server connection
 *	@param char* server_port: go figure
 * 	@return -1 on fail with log information and errno output, 0 otherwise
 */
 int initialize_server_network_context(server_network_context* ctx, char* server_ipv4, char* server_port);
+
+/*
+ * Uses fcntl to set the fd to be nonblocking. Returns -1 on failure
+ *
+ * @param fd: filedescriptor to make nonblocking
+ */
+int set_nonblocking(int fd);
 
 /*
 *	Close the sockets inside of the network context for proper cleanup
