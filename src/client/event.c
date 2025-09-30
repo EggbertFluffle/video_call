@@ -12,9 +12,6 @@
 #include "../common/log.h"
 #include "../common/packets.h"
 
-void initialize_signal_handlers() {
-}
-
 void handle_welcome_receive(client_network_context* ctx, client_packet* packet) {
 	ctx->id = packet->payload.welcome.client_id;
 	print_log("Received welcome packet, new id is %d", ctx->id);
@@ -78,15 +75,22 @@ int handle_command(client_application_context *ctx, char *input_buffer, ssize_t 
 		return -1;
 	}
 
-	print_log("trying to execute %s command", argv[0]);
-
 	if(strncmp(argv[0], "quit", strnlen(argv[0], 4)) == 0 || 
 		strncmp(argv[0], "exit", strnlen(argv[0], 4)) == 0) {
-		client_quit_command(ctx);
+		quit_command(ctx);
 	} else if(strncmp(argv[0], "connect", strnlen(argv[0], 7)) == 0) {
-		client_connect_command(ctx, argc, argv);
+		connect_command(ctx, argc, argv);
 	} else if(strncmp(argv[0], "disconnect", strnlen(argv[0], 10)) == 0) {
-		client_disconnect_command(ctx);
+		disconnect_command(ctx);
+	} else if(strncmp(argv[0], "help", strnlen(argv[0], 4)) == 0) {
+		help_command();
+	} else if(strncmp(argv[0], "set", strnlen(argv[0], 3)) == 0) {
+		set_variable_command(ctx, argc, argv);
+	} else if(strncmp(argv[0], "get", strnlen(argv[0], 3)) == 0) {
+		get_variable_command(ctx, argc, argv);
+	} else {
+		print_log("Command \"%s\" does not exist", argv[0]);
+		return -1;
 	}
 	
 	return 0;
@@ -123,7 +127,7 @@ int handle_packet_receive(client_network_context* ctx) {
 		}
 		
 		print_log("Unable to read packet from server");
-		return -1;
+		return 0;
 	}
 
 	switch(packet.type) {

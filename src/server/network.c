@@ -183,7 +183,14 @@ int accept_client(server_network_context* ctx) {
 		return -1;
 	}
 
-	new_client_connection->id = rand();
+	// Generate a random id until unique
+	// TODO: Maybe constrain the id so that it is in a range, 
+	// or has a fixes number of signifigant digits
+	// It is possible that two clients receive the same random id
+	// TODO: Fix the impossibility I guess
+	do {
+		new_client_connection->id = rand();
+	} while(new_client_connection->id == 0);
 	ctx->client_count++;
 
 	struct pollfd* new_pollfd = new_client_connection->pollfd;
@@ -229,7 +236,7 @@ int remove_client(server_network_context* ctx, int id) {
 client_connection* get_client(server_network_context* ctx, int id) {
 	client_connection* client = NULL;
 	
-	for(int c = 0; c < ctx->client_count; c++) {
+	for(int c = 0; c < MAX_CLIENTS; c++) {
 		if(ctx->clients[c].id == id) {
 			client = &ctx->clients[c];
 			break;
@@ -262,10 +269,12 @@ int send_packet(server_network_context* ctx, int client_id, client_packet* packe
 	} else {
 		for(int c = 0; c < ctx->client_count; c++) {
 			client_connection* client = &ctx->clients[c];
+			if(client == NULL) continue;
+
 			if(client_id < 0 && client->id == -client_id) continue;
 
-			if(send_packet(ctx, client->pollfd->fd, packet) == -1) {
-				print_log("Unable to send packet to client %d", client->id);
+			if(send_packet(ctx, client->id, packet) == -1) {
+				print_log("Unable to send packet to client %d in slot %d ", client->id, c);
 			}
 		}
 	}

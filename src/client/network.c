@@ -14,6 +14,7 @@
 
 #include "../common/log.h"
 #include "../common/packets.h"
+#include "event.h"
 #include "network.h"
 
 int initialize_client_network_context(client_network_context* ctx, char* server_ipv4, char* server_port) {
@@ -98,7 +99,17 @@ int set_nonblocking(int fd) {
 	return 0;
 }
 
-int poll_events(client_network_context* ctx) {
+int client_network_update(client_network_context* ctx) {
+	if(ctx == NULL) {
+		return -1;
+	}
+
+	poll_client_events(ctx);
+
+	return handle_packet_receive(ctx);
+}
+
+int poll_client_events(client_network_context* ctx) {
 	 // Update poll fds to contain events that occured
 	if(poll(ctx->pollfds, 2, 0) == -1) {
 		print_log("Poll failed! Errno: %d", errno);

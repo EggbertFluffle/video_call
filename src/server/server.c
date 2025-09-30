@@ -1,10 +1,12 @@
-#include <string.h>
 #define _SERVER
+
+#include <string.h>
 
 #include <sys/socket.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <memory.h>
+#include <unistd.h>
 
 #include "event.h"
 #include "network.h"
@@ -20,24 +22,19 @@ int main(int argc, char** argv) {
 	char server_port[32];
 
 	if(argc < 3) {
-		printf("What ip will you connect from?: ");
+		print_log("What ip will you connect from?: ");
 		scanf(" %s", server_ipv4);
 
-		printf("What port would you like to connect through?: ");
+		print_log("What port would you like to connect through?: ");
 		scanf(" %s", server_port);
 	} else {
 		strncpy(server_ipv4, argv[1], sizeof(server_ipv4));
 		strncpy(server_port, argv[2], sizeof(server_port));
 	}
 
-	printf("%s\n", server_ipv4);
-	printf("%s\n", server_port);
-
 	if(initialize_server_network_context(&ctx, server_ipv4, server_port) == -1) {
 		exit(-1);
 	}
-
-	// const char* face_message = "+-----+\n|     |\n| o o |\n|  ^  |\n+-----+";
 
 	bool exit = false;
 	while(!exit) {

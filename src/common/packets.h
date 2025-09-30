@@ -1,6 +1,7 @@
 #pragma once
 
 #define MESSAGE_BUFFER_LENGTH 255
+#define USERNAME_BUFFER_LENGTH 32
 
 #include <string.h>
 
@@ -37,22 +38,17 @@ typedef struct {
 
 typedef enum {
 	SERVER_CHAT_PAYLOAD,
-	SERVER_COMMAND_PAYLOAD,
 	SERVER_DISCONNECT_PAYLOAD
 } server_payload_type;
 
 typedef struct {
 	size_t size;
 	char message[MESSAGE_BUFFER_LENGTH];
+	char username[USERNAME_BUFFER_LENGTH];
 } server_chat_payload;
-
-typedef struct {
-	char message[MESSAGE_BUFFER_LENGTH];
-} server_command_payload;
 
 typedef union {
 	server_chat_payload chat;
-	server_command_payload command;
 } server_payload;
 
 typedef struct {

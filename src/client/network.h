@@ -33,6 +33,12 @@ typedef struct {
 } client_network_context;
 
 /*
+* 	Process networking updates by polling the tcp and udp sockets for new data
+* 	and handling any found packets.
+*/
+int client_network_update(client_network_context* ctx);
+
+/*
 *	Initializes a poll file descriptor list for non-blocking interfacing with
 *	stdin, steam socket to the server and a datagram socket to the server
 *

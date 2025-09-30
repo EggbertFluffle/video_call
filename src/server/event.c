@@ -64,14 +64,11 @@ int handle_packet_receive(server_network_context *ctx) {
 			print_log("Unable to read packet from client %d in pos %d", client->id, c);
 			continue;
 		}
-		print_log("Received packet from client %d", packet.sender_id);
+		print_log("Received packet from client %d(%s)", packet.sender_id);
 
 		switch(packet.type) {
 			case SERVER_CHAT_PAYLOAD:
 				handle_chat_receive(ctx, &packet);
-				break;
-			case SERVER_COMMAND_PAYLOAD:
-				// handle_command();
 				break;
 			case SERVER_DISCONNECT_PAYLOAD:
 				remove_client(ctx, packet.sender_id);
